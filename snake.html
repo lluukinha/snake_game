@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Jogo da cobrinha</title>
+	<style>
+		.pontuacao {
+			margin-top:10px;
+				margin-bottom:10px;
+				display:flex;
+				font-family:verdana;
+				justify-content:space-between;
+				font-size: 1.5rem;
+				width:500px;
+		}
+
+		#game_over {
+			width:350px;
+			height:150px;
+			background-color:white;
+			border-radius: 15px;
+			border: 1px solid black;
+			position:absolute;
+			top: 200px;
+			left: 130px;
+			text-align: center;
+			display:none;
+		}
+	</style>
+</head>
+<body>
+	<div id="game_over">
+		<h1>FIM DE JOGO</h1>
+		<button id="btn_recomeco">RECOMEÇAR</button>
+	</div>
+	<div class="pontuacao">
+		<div>Pontos: <span id="pontos">0</span></div>
+		<div>Ranking: <span id="best_score">0</span></div>
+	</div>
+	<canvas id="stage" width="500" height="500"></canvas>
+	<div id="controles">
+		<table>
+			<tbody>
+				<tr>
+					<td></td>
+					<td><button class="btn_click" direction="UP">/\</button></td>
+					<td></td>
+				</tr>
+				<tr>
+					<td><button class="btn_click" direction="LEFT"><</button></td>
+					<td><button class="btn_click" direction="DOWN">\/</button></td>
+					<td><button class="btn_click" direction="RIGHT">></button></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<script type="text/javascript">
+
+		//primeira coisa é verificar o carregamento da página		
+		window.onload = function(){
+
+			var pontos = 0;
+			var best_score = 0;
+			var continua = false;
+			var end_game = false;
+			var direction = '';
+
+			//area do jogo
+			var stage = document.getElementById('stage');
+			//contexto do canvas (2d ou 3d)
+			//o contexto é usado para criar toda a parte visual
+			var ctx = stage.getContext("2d");
+
+
+			var btn = document.getElementsByClassName("btn_click");
+			for (var i = 0; i< btn.length; i++) {
+				btn[i].onclick = function(e) {
+					var direction_btn = e.path[0].attributes.direction.value;
+
+					if (!end_game) {
+					continua = true;
+				}
+
+				//vou criar um switch com as chaves das teclas que serão úteis nesse jogo.
+				switch (direction_btn) {
+					case "LEFT": // Left
+					if (direction != "RIGHT") {
+						direction = 'LEFT';
+					}
+						break;
+					case "UP": // up
+					if (direction != "DOWN") {
+						direction = 'UP';
+					}
+						break;
+					case "RIGHT": // right
+					if (direction != "LEFT") {
+						direction = 'RIGHT';
+					}
+						break;
+					case "DOWN": // down
+					if (direction != "UP") {
+						direction = 'DOWN';
+					}
+						break;
+				}
+
+				}
+			}
+
+			/* DEPOIS DE TUDO O FILL */
+			//vou criar um listener, que é quando a aplicação fica esperando eu apertar alguma tecla,
+			//e quando eu apertar, ela vai trazer no console o numero da tecla.
+			document.addEventListener("keydown", function(e) {
+				console.log(e.key);
+			});
+
+			document.addEventListener("keydown", keyPush);
+			var fps = 80;
+
+			document.getElementById("btn_recomeco").addEventListener("click", function() {
+				start_again();
+			});
+
+			//intervalo para uma função ser chamada de tempos em tempos
+			//1000/15
+			setInterval(game, fps);
+
+			//velocidade da cobrinha
+			var vel = 1;
+
+			//velocidades da cobra de acordo com a posição que ela anda.
+			var vx = 0;
+			var vy = 0;
+
+			//ponto x e ponto y de onde ela vai iniciar.
+			var px =3;
+			var py = 3;
+
+			//tamanho do pixel, para poder quadricular o jogo (pixelar)
+			var tp = 25;
+			//quantidade de pixels, de acordo com o tamanho do stage
+			var qp = 20;
+			//30 * 20 = 600;
+
+			//item x e item y (maçã), posição onde ela estará
+			var ax = Math.floor(Math.random()*qp);
+			var ay = Math.floor(Math.random()*qp);
+
+			//rastro da cobrinha
+			var trail = [];
+			//tamanho da calda
+			tail = 5;
+
+			//função do jogo, que vai setar as velocidades da cobrinha
+			//toda vez que rodar o game, ele repinta.
+			function game(){
+				//posição da cobra vai adicionar a velocidade X
+				px += vx;
+				//posição da cobra vai adicionar a velocidade Y
+				py += vy;
+
+				//se a posição X for menor que 0 (ou seja, se a cobrinha atingiu a borda)
+				//isso é quando apertar a Esquerda <<<<<<-----
+				if (px <0) {
+					//então o pc vai ser igual a quantidade de pixels -1
+					px = qp-1;
+				}
+
+				//se o px for maior que a quantidade de pixels -1 então o px vai ser 0.
+				if (px > qp-1) {
+					px = 0;
+				}
+
+				//se o py for menor que 0 então o py é igual a quantidade de pixels -1
+				if (py < 0) {
+					py = qp-1;
+				}
+
+				//e por ultimo, se o py for maior que a quantidade de pixels -1 então vai voltar pro zero.
+				if (py > qp-1) {
+					py = 0;
+				}
+
+			/* FIM DEPOIS DO FILL */
+
+			//vou criar o cenário, escolho a cor e depois o tamanho
+				ctx.fillStyle = "black";
+				ctx.fillRect(0,0, stage.width, stage.height);
+
+				//criar a maçã
+				ctx.fillStyle = "red";
+				//preencher o retangulo nas posições:
+				//vou preencher na posição definida lá em cima p/ o tamanho da maçã.
+				//LARGURA = ax * o tamanho do pixel  - ALTURA = ay * o tamanho do pixel
+				//e vou pintar o pixel no tamanho exato dele, então é tp,tp
+				ctx.fillRect(ax*tp, ay*tp, tp,tp);
+
+				//agora vou criar a cobra.
+				ctx.fillStyle = "gray";
+				//vou criar um loop agora, que vai ser executado pelo tamanho da cauda da cobra.
+				for (var i = 0; i < trail.length; i++) {
+					//vou pintar o trail[i].x e multiplicar pelo tamanho do pixel
+					//depois fazer o mesmo para o y
+					ctx.fillRect(trail[i].x*tp, trail[i].y*tp, tp-1,tp-1);
+
+					//se a posição X da calda for igual a posição X da cobrinha, você bateu nela então para o jogo.
+					//e se a posição Y da calda for igual a posição Y da cobra, também.
+					if (continua && trail[i].x == px && trail[i].y == py) {
+						game_over();
+					}
+				}
+
+				//depois desse loop, vou dar um push, criando um objeto com x e y,
+				//colocando eles na posição X e Y
+				trail.push({x:px,y:py })
+
+				//então agora vou criar um loop de acordo com o tamanho da calda.
+				//enquanto o tamanho da calda for MAIOR do que a calda,
+				//eu tiro o primeiro elemento do array, pra dar a sensação de movimento da obra
+				while (trail.length > tail) {
+					trail.shift();
+				}
+
+				//depois disso faço uma condição para quando a cobra acertar a maçã.
+				//se a posição X da maçã for igual a posição X da cobra, ou 
+				//se a posição Y da maçã for igual a posição Y da cobra,
+				//então eu vou aumentar o tamanho da calda.
+				if (ax==px && ay==py){
+					tail++;
+					pontos += 10;
+
+					if (best_score < pontos) {
+						best_score = pontos;
+					}
+					
+					reescrever_pontos();
+					//depois de aumentar o tamanho da calda
+					//,eu vou jogar a maçã para um canto aleatório da tela.
+					//Floor arredonda pra baixo, numero aleatorio * quantidade de pixels
+					ax = Math.floor(Math.random()*qp);
+					ay = Math.floor(Math.random()*qp);
+				}
+
+			}
+
+			function reescrever_pontos() {
+				document.getElementById("pontos").innerHTML = pontos;
+				document.getElementById("best_score").innerHTML = best_score;
+			}
+
+			function game_over() {
+				//para parar o jogo (game over) a gente coloca a velocidade x e y como 0.
+						document.getElementById("game_over").style = "display:inline";
+						vx = 0;
+						vy = 0;
+						//e volta a calda a ter 5 de tamanho, que é o tamanho inicial;
+						tail =5;
+						vel = 0;
+						continua = false;
+						end_game = true;
+			}
+
+			function start_again() {
+				pontos = 0;
+				reescrever_pontos();
+				px = 3;
+				py = 3;
+				vel = 1;
+				vx = 1;
+				end_game = false;
+				continua = true;
+				document.getElementById("game_over").style = "display:none";
+			}
+
+			//funcao de movimentação de jogo
+			function keyPush(event){
+
+				if (!end_game) {
+					continua = true;
+				}
+
+				//vou criar um switch com as chaves das teclas que serão úteis nesse jogo.
+				switch (event.keyCode) {
+					case 37: // Left
+					if (direction != "RIGHT") {
+						direction = 'LEFT';
+					}
+						break;
+					case 38: // up
+					if (direction != "DOWN") {
+						direction = 'UP';
+					}
+						break;
+					case 39: // right
+					if (direction != "LEFT") {
+						direction = 'RIGHT';
+					}
+						break;
+					case 40: // down
+					if (direction != "UP") {
+						direction = 'DOWN';
+					}
+						break;
+				}
+
+				switch (direction) {
+					case "LEFT": 
+					//se for pra esquerda, então a velocidade Y passa a ser 0, e a velocidade X fica negativa
+						vx = -vel;
+						vy = 0;
+					break;
+
+					case "RIGHT":
+					//pra direita vai ter como velocidade X igual a velocidade, e Y igual a zero.
+						vx = vel;
+						vy = 0;
+					break;
+
+					case "UP":
+					//se for pra cima, então VX vai ser 0  e VY vai ser negativo a velocidade
+						vx = 0;
+						vy = -vel;						
+					break;
+
+					case "DOWN":
+					//e se for pra baixo, o x fica 0 e o y fica com a velocidade
+						vx = 0;
+						vy = vel;
+					break;
+				}
+			}
+
+		}
+	</script>
+</body>
+</html>
